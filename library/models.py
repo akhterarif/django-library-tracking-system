@@ -1,3 +1,4 @@
+from datetime import date, timedelta
 from django.db import models
 from django.contrib.auth.models import User
 
@@ -36,7 +37,7 @@ class Member(models.Model):
         return self.user.username
 
 
-from datetime import date, timedelta
+
 
 def get_default_due_date():
     return date.today() + timedelta(days=14)

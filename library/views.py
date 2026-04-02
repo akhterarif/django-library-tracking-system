@@ -1,4 +1,6 @@
-from rest_framework import viewsets, status
+from datetime import date, timedelta
+
+from rest_framework import viewsets, status, pagination
 from rest_framework.response import Response
 from .models import Author, Book, Member, Loan
 from .serializers import AuthorSerializer, BookSerializer, MemberSerializer, LoanSerializer
@@ -11,8 +13,9 @@ class AuthorViewSet(viewsets.ModelViewSet):
     serializer_class = AuthorSerializer
 
 class BookViewSet(viewsets.ModelViewSet):
-    queryset = Book.objects.all()
+    queryset = Book.objects.select_related('author').all()
     serializer_class = BookSerializer
+    pagination_class = pagination.LimitOffsetPagination
 
     @action(detail=True, methods=['post'])
     def loan(self, request, pk=None):
@@ -49,6 +52,30 @@ class MemberViewSet(viewsets.ModelViewSet):
     queryset = Member.objects.all()
     serializer_class = MemberSerializer
 
+
+    
+
 class LoanViewSet(viewsets.ModelViewSet):
     queryset = Loan.objects.all()
     serializer_class = LoanSerializer
+
+
+    @action(detail=True, methods=['post'])
+    def extend_due_date(self, request, pk=None):
+        loan = self.get_object()
+        additional_days = request.data.get('additional_days')
+
+        if loan.due_date < date.today():
+            return Response({'error': 'This loan has been overdued.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if int(additional_days) < 0: 
+            return Response({'error': 'Additional days can not be less than 0.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        
+        loan.due_date = loan.due_date + timedelta(days=int(additional_days))
+        loan.save()
+
+
+        updated_loan = LoanSerializer(loan)
+
+        return Response(updated_loan.data, status=status.HTTP_200_OK)

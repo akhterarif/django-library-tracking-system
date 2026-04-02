@@ -35,12 +35,19 @@ class Member(models.Model):
     def __str__(self):
         return self.user.username
 
+
+from datetime import date, timedelta
+
+def get_default_due_date():
+    return date.today() + timedelta(days=14)
+
 class Loan(models.Model):
     book = models.ForeignKey(Book, related_name='loans', on_delete=models.CASCADE)
     member = models.ForeignKey(Member, related_name='loans', on_delete=models.CASCADE)
     loan_date = models.DateField(auto_now_add=True)
     return_date = models.DateField(null=True, blank=True)
     is_returned = models.BooleanField(default=False)
+    due_date = models.DateField(null=True, default=get_default_due_date)
 
     def __str__(self):
         return f"{self.book.title} loaned to {self.member.user.username}"
